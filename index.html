@@ -2,8 +2,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Admin – Instituto NT Dancing</title>
+<title>Painel Admin – Instituto NT Dancing v3.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -598,13 +601,16 @@ async function enviarCobranca(m, btn) {
 
 // LOGIN
 function fazerLogin() {
-  const val = document.getElementById('senha-input').value;
+  const val = document.getElementById('senha-input').value.trim();
+  console.log('Tentando login... senha digitada:', val.length, 'chars');
   if (val === SENHA_ADMIN) {
+    console.log('Login OK!');
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-panel').style.display  = 'block';
     verificarConfig();
     carregarDados();
   } else {
+    console.log('Senha incorreta. Esperado:', SENHA_ADMIN.length, 'chars, recebido:', val.length);
     document.getElementById('login-err').classList.add('show');
     document.getElementById('senha-input').value = '';
     document.getElementById('senha-input').focus();
@@ -630,34 +636,50 @@ async function carregarDados() {
   tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><div class="spinner"></div><p>Carregando...</p></td></tr>';
 
   try {
+    // Cache-busting para evitar dados antigos
     const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID
       + '/values/' + encodeURIComponent(SHEET_NAME)
-      + '?key=' + API_KEY;
+      + '?key=' + API_KEY
+      + '&t=' + Date.now();
 
+    console.log('Carregando planilha:', SHEET_ID);
     const res  = await fetch(url);
     const json = await res.json();
+    console.log('Resposta da API:', JSON.stringify(json).slice(0, 200));
+
+    if (json.error) {
+      let msg = 'Erro da API Google: ' + json.error.message;
+      if (json.error.code === 403) msg = 'Acesso negado. Verifique se a planilha está compartilhada como "Qualquer pessoa com o link pode ver".';
+      if (json.error.code === 400) msg = 'API Key inválida ou planilha não encontrada.';
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><div class="empty-state"><div class="icon">⚠️</div><p>' + msg + '</p></div></td></tr>';
+      return;
+    }
 
     if (!json.values || json.values.length < 2) {
       todasMatriculas = [];
       renderizar([]);
+      document.getElementById('config-banner') && document.getElementById('config-banner').classList.remove('show');
       return;
     }
 
     const headers = json.values[0];
+    console.log('Colunas encontradas:', headers);
     todasMatriculas = json.values.slice(1).map((row, idx) => {
       const obj = { _idx: idx };
       headers.forEach((h, i) => { obj[h] = row[i] || ''; });
       return obj;
     }).reverse(); // mais recentes primeiro
 
+    console.log('Total de registros:', todasMatriculas.length);
     renderizar(todasMatriculas);
     atualizarStats(todasMatriculas);
 
-    // Consulta status no Asaas em background (nao bloqueia a tela)
+    // Consulta status no Asaas em background
     consultarStatusPagamentos(todasMatriculas);
 
   } catch (err) {
-    tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar. Verifique o ID da planilha e a API Key.</p></div></td></tr>';
+    console.error('Erro ao carregar:', err);
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><div class="empty-state"><div class="icon">⚠️</div><p>Erro de conexão. Abra o Console (F12) para ver detalhes.</p></div></td></tr>';
   }
 }
 
@@ -831,7 +853,10 @@ function gerarContrato(m) {
 
 function contratoHTML(m, s, dia, mes, ano, turma, mensalidade, vencimento, pagamento) {
   return '<!DOCTYPE html><html lang="pt-BR"><head>'
-    + '<meta charset="UTF-8">'
+    + '<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">'
     + '<title>Contrato – ' + s('Nome do Aluno') + '</title>'
     + '<style>'
     + 'body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.6;color:#000;margin:0;padding:0;}'
@@ -1041,4 +1066,9 @@ function copiarCodigo() {
   navigator.clipboard.writeText(cod).then(() => {
     const btn = document.querySelector('.btn-copy');
     btn.textContent = '✅ Copiado!';
-    setTimeout(() => { btn.innerHTML = '📋 Copiar Codigo'; }, 2000
+    setTimeout(() => { btn.innerHTML = '📋 Copiar Codigo'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>

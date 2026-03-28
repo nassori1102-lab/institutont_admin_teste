@@ -579,23 +579,13 @@ async function enviarCobranca(m, btn) {
   btn.disabled = true;
   btn.textContent = 'Enviando...';
 
-  // Monta mensagem de cobrança
-  const mensagem = 'Ola, ' + mae + '! 💜
-
-'
-    + 'Passando para avisar que a mensalidade de *' + nome + '* no Instituto NT Dancing está em aberto.
-
-'
-    + (mens ? '*Valor:* R$ ' + mens + '
-
-' : '')
-    + (link ? '*Link para pagamento (PIX / Cartão):*
-' + link + '
-
-' : '')
-    + 'Qualquer duvida estamos a disposicao!
-'
-    + '_Instituto NT Dancing_ 🩰';
+  // Monta mensagem de cobranca
+  const mensagem = 'Ola, ' + mae + '!\n\n'
+    + 'Passando para avisar que a mensalidade de *' + nome + '* no Instituto NT Dancing esta em aberto.\n\n'
+    + (mens ? '*Valor:* R$ ' + mens + '\n\n' : '')
+    + (link ? '*Link para pagamento (PIX / Cartao):*\n' + link + '\n\n' : '')
+    + 'Qualquer duvida estamos a disposicao!\n'
+    + '_Instituto NT Dancing_';
 
   // Abre WhatsApp Web com a mensagem pronta
   const waUrl = 'https://wa.me/55' + tel + '?text=' + encodeURIComponent(mensagem);
